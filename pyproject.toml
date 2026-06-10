@@ -1,0 +1,55 @@
+[project]
+name = "magi-hermes"
+version = "1.0.0"
+requires-python = ">= 3.11"
+description = "MAGI multi-perspective analysis skill for Hermes Agent"
+readme = "skills/magi/README.md"
+license = "MIT OR Apache-2.0"
+authors = [{name = "Julian Bolivar"}]
+keywords = ["hermes", "magi", "multi-agent", "code-review", "ollama", "local-llm"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy"]
+
+[project.urls]
+Repository = "https://github.com/BolivarTech/MAGI-Hermes"
+Homepage = "https://github.com/BolivarTech/MAGI-Hermes"
+Issues = "https://github.com/BolivarTech/MAGI-Hermes/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["skills/magi/scripts"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "skills/magi/scripts"
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "_pytest.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "conftest"]
+disallow_untyped_defs = false
+disallow_untyped_decorators = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+warn_return_any = false
+disable_error_code = ["type-arg", "misc", "unused-ignore"]

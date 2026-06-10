@@ -1,0 +1,36 @@
+__pycache__/
+*.pyc
+.*_cache/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+debug.log
+.env
+.venv/
+.claude/
+sbtdd/
+planning/
+CLAUDE.md
+CLAUDE.local.md
+CLAUDE.techdebt.md
+CLAUDE.changelog.md
+graphify-out
+
+# Local audit / handoff workspaces — produced during development, not part
+# of the shipped plugin. Each release leaves bundles under magi-audit-*/
+# from local self-review runs; .remember/ is a per-session handoff buffer.
+# Future telemetry snapshots that should ship (e.g. for the 2026-05-15
+# review routine) must live in a path that does not match these entries
+# or be force-added with `git add -f`.
+.remember/
+magi-audit-2.1.1/
+magi-audit-2.1.2/
+magi-audit-postfix/
+.regression/
+
+# Premortem experiment artifacts live on a local-only feature branch
+# (see CLAUDE.md "Post-release hardening / Premortem A/B experiment").
+# The directory persists on disk after branch checkout to main until the
+# operator deletes both the branch and the directory on 2026-05-29.
+experiments/
