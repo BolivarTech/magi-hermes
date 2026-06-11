@@ -202,7 +202,7 @@ Expected output:
 
 ```
 User plugins (1):
-  ● magi v1.0.0 [enabled]
+  ● magi v2.0.0 [enabled]
 ```
 
 If it shows `[not enabled] — not enabled in config`, run `hermes plugins enable magi` **outside** Hermes and restart again.
