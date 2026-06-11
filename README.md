@@ -1,14 +1,22 @@
-# MAGI — Multi-Perspective Analysis Skill for Hermes Agent
+# MAGI Plugin for Hermes Agent
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Ollama](https://img.shields.io/badge/ollama-compatible-green.svg)](https://ollama.ai/)
 
-A Hermes Agent skill that implements a **multi-perspective analysis system** inspired by the [MAGI supercomputers](https://evangelion.fandom.com/wiki/Magi) from *Neon Genesis Evangelion*. 
+A **Hermes Agent plugin** that implements the **multi-perspective analysis**
+system inspired by the [MAGI supercomputers](https://evangelion.fandom.com/wiki/Magi)
+from *Neon Genesis Evangelion*.
 
-Forked from the original [magi-claude](https://github.com/BolivarTech/magi-claude) plugin.
+Three specialized AI agents independently analyze the same problem from
+complementary — and deliberately adversarial — perspectives, then synthesize
+their verdicts via deterministic weight-based majority vote. This plugin is
+**functionally equivalent** to the production MAGI-Claude v2.6.0 system,
+migrated to run as a native Hermes plugin over any OpenAI-compatible endpoint
+with genuine cross-lineage model diversity.
 
-Three specialized AI agents independently analyze the same problem from complementary — and deliberately adversarial — perspectives, then synthesize their verdicts via weight-based majority vote. Unlike the original Claude Code plugin, this version runs on **any OpenAI-compatible local endpoint** (Ollama, vLLM, LM Studio, etc.) with **genuine cross-lineage model diversity**.
+Forked from the original [magi-claude](https://github.com/BolivarTech/magi-claude)
+and the [magi-hermes skill](https://github.com/BolivarTech/magi-hermes).
 
 ---
 
@@ -16,13 +24,16 @@ Three specialized AI agents independently analyze the same problem from compleme
 
 ### The MAGI in Evangelion
 
-In *Neon Genesis Evangelion* (1995, Hideaki Anno / Gainax), the MAGI are three supercomputers that govern Tokyo-3's critical decisions. Each embodies a different facet of their creator, Dr. Naoko Akagi: **Melchior** (the scientist), **Balthasar** (the mother), and **Caspar** (the woman). Decisions require consensus — no single perspective dominates.
-
-This design reflects a profound insight: **complex decisions benefit from structured disagreement**. A single decision-maker, no matter how capable, carries blind spots. Three independent evaluators with different priorities surface risks, trade-offs, and opportunities that any one of them would miss.
+In *Neon Genesis Evangelion* (1995, Hideaki Anno / Gainax), the MAGI are three
+supercomputers that govern Tokyo-3's critical decisions. Each embodies a
+different facet of their creator, Dr. Naoko Akagi: **Melchior** (the scientist),
+**Balthasar** (the mother), and **Caspar** (the woman). Decisions require
+consensus — no single perspective dominates.
 
 ### The Theory in Practice
 
-The adversarial multi-perspective model addresses well-documented cognitive biases in software engineering:
+The adversarial multi-perspective model addresses well-documented cognitive
+biases:
 
 | Bias | How MAGI Mitigates It |
 |------|----------------------|
@@ -32,28 +43,28 @@ The adversarial multi-perspective model addresses well-documented cognitive bias
 | **Optimism bias** | The weight-based scoring penalizes reject (-1) more heavily than approve (+1), making negative signals harder to override |
 | **Status quo bias** | Each agent evaluates from first principles against its own criteria, not against "how things are done" |
 
-The key insight is that **disagreement between agents is a feature, not a failure**. When Melchior (Scientist) approves but Caspar (Critic) rejects, the dissent surfaces a genuine tension between technical correctness and risk tolerance. Unanimous agreement on non-trivial input may indicate insufficiently differentiated prompts, not actual consensus.
-
-In practice, the system works best for decisions with:
-- **Genuine uncertainty** — multiple valid approaches exist
-- **Significant consequences** — the cost of a wrong decision is high
-- **Hidden trade-offs** — benefits and risks are not immediately obvious
-
-For trivial questions with one clear answer, the complexity gate skips the full system and responds directly.
-
 ---
 
 ## How It Differs from the Original
 
-| Feature | Original Claude Plugin | This Hermes Skill |
+| Feature | Original Claude Plugin | This Hermes Plugin |
 |---------|----------------------|-------------------|
 | Backend | `claude -p` CLI | OpenAI-compatible HTTP (Ollama, vLLM, LM Studio) |
 | Provider lock-in | Anthropic only | Any endpoint with `/v1/chat/completions` |
 | Model diversity | Prompt-only | **Real cross-model diversity** (distinct model per mage) |
-| Config system | Custom TOML files | Native `hermes config set ...` |
+| Config system | Custom TOML files | TOML + env precedence (see below) |
 | Cross-platform | Terminal only | Terminal + Telegram + Discord + Slack + ... |
-| Memory | None | Persistent via Hermes memory system |
-| Sub-agent mechanism | `claude -p` parallel | `asyncio` + `urllib` direct HTTP |
+| Retry logic | Single-shot on schema/JSON fail | ✅ Identical (v2.2.0 / v2.2.4) |
+| Finding guard | Diff-grounded validation | ✅ Identical (v3.0.0 Block A) |
+| Code-review enrichment | Git diff + symbol lookup | ✅ Identical (A2, F2, F3) |
+| A5 mode strip | Null file/line in design/analysis | ✅ Identical |
+| JSON report output | `magi-report.json` artifact | ✅ Identical |
+| Temp dir lifecycle | LRU + locks + cleanup | ✅ Identical (v2.6.0) |
+| Input size warning | Chars/4 heuristic | ✅ Identical |
+| Cost tracking | Aggregate `total_cost_usd` | ✅ Identical |
+| Sanitization | 4-layer defense-in-depth | ✅ Identical |
+| Windows UTF-8 | `reconfigure` on startup | ✅ Identical (v2.2.6) |
+| Integration | Claude Code plugin | **Hermes Agent native plugin** |
 
 ---
 
@@ -71,372 +82,182 @@ For trivial questions with one clear answer, the complexity gate skips the full 
 
 - Hermes Agent installed and configured
 - An OpenAI-compatible endpoint reachable from the Hermes host (default: `http://localhost:11434/v1`)
-- At least one model available on that endpoint
-- Python 3.11+ (uses `asyncio` and modern dict syntax)
+- Python 3.11+ (uses `asyncio`, `tomllib`, modern dict syntax)
 
 ---
 
 ## Installation
 
-### From GitHub (for users)
+### Via pip
 
 ```bash
-# 1. Install directly from the raw SKILL.md URL
-hermes skills install https://raw.githubusercontent.com/BolivarTech/magi-hermes/main/skills/magi/SKILL.md
-
-# 2. Verify installation
-hermes skills list
-# Should show 'magi' under software-development
+pip install magi-hermes-plugin
 ```
 
-### Local Development
+Hermes auto-discovers the plugin on next startup via the entry-point declared
+in `pyproject.toml`:
+```toml
+[project.entry-points."hermes_agent.plugins"]
+magi = "magi_plugin"
+```
+
+### As a directory plugin
 
 ```bash
-# Clone the repository
 git clone https://github.com/BolivarTech/magi-hermes.git
 cd magi-hermes
+mkdir -p ~/.hermes/plugins/magi
+ln -s "$(pwd)/magi-hermes-plugin"/* ~/.hermes/plugins/magi/
+hermes
+```
 
-# Link the skill into your Hermes skills directory (Windows)
-mklink /D "%LOCALAPPDATA%\hermes\skills\software-development\magi" "skills\magi"
+### Enable
 
-# Reload Hermes to pick up the new skill
-hermes reload
+```bash
+hermes plugins list          # Should show magi
+hermes plugins enable magi   # Enable if not already active
 ```
 
 ---
 
 ## Configuration
 
-### Required
+MAGI uses a **layered configuration** with the following precedence per key
+(high → low):
+
+1. `MAGI_OLLAMA_*` environment variables
+2. Repo-level TOML `.hermes/magi-ollama.toml`
+3. Global TOML `~/.hermes/magi-ollama.toml`
+4. Generic env fallbacks (`OLLAMA_HOST`, `OLLAMA_API_KEY`)
+5. Built-in defaults
+
+### Default Models (production-proven)
+
+These are the models tested in production with MAGI-Claude v2.6.0 under the
+Ollama cloud tier "Máximo". They provide **cross-lineage diversity**
+(Qwen + GPT-OSS + DeepSeek):
+
+| Mage | Default Model | Role |
+|------|---------------|------|
+| Melchior | `qwen3.5:397b-cloud` | Scientist — theoretical analysis |
+| Balthasar | `gpt-oss:120b-cloud` | Pragmatist — practical trade-offs |
+| Caspar | `deepseek-v4-pro:cloud` | Critic — adversarial review |
+
+### TOML config file example
+
+```toml
+# ~/.hermes/magi-ollama.toml  (or .hermes/magi-ollama.toml in repo)
+base_url = "http://localhost:11434/v1"
+api_key = "sk-..."          # optional; omit for no auth
+structured = "schema"       # "schema" | "object" | "off"
+
+[models]
+melchior = "qwen3.5:397b-cloud"
+balthasar = "gpt-oss:120b-cloud"
+caspar = "deepseek-v4-pro:cloud"
+```
+
+### Environment variable overrides
 
 ```bash
-# Set the endpoint for your local OpenAI-compatible server (optional — defaults to localhost)
+export MAGI_OLLAMA_HOST="http://localhost:11434/v1"
+export MAGI_OLLAMA_API_KEY="sk-..."
+export MAGI_OLLAMA_STRUCTURED="schema"
+export MAGI_OLLAMA_MODEL_MELCHIOR="qwen3.5:397b-cloud"
+export MAGI_OLLAMA_MODEL_BALTHASAR="gpt-oss:120b-cloud"
+export MAGI_OLLAMA_MODEL_CASPAR="deepseek-v4-pro:cloud"
+```
+
+### Hermes config.yaml (legacy, still supported)
+
+```bash
 hermes config set magi.ollama.host http://localhost:11434/v1
-```
-
-### Recommended — Model Diversity
-
-For maximum analytical diversity, assign **different model families** to each mage:
-
-```bash
-# Qwen for analytical depth (scientist)
-hermes config set magi.models.melchior qwen3.1:latest
-
-# Llama for balanced pragmatism
-hermes config set magi.models.balthasar llama3.2:latest
-
-# Mistral for adversarial rigor
-hermes config set magi.models.caspar mistral:latest
-```
-
-**Why different models?** Each model family has distinct training data, strengths, and biases. A Qwen model trained on mathematical reasoning thinks differently about code correctness than a Mistral model optimized for instruction following. This **cross-lineage diversity** is the core advantage over single-model multi-prompt systems.
-
-### Optional
-
-```bash
-# Global fallback model (when per-mage not set)
-hermes config set magi.ollama.default_model llama3.1:latest
-
-# Per-agent timeout in seconds
-hermes config set magi.ollama.timeout 300
-```
-
-### Environment Variable Fallbacks
-
-If Hermes config is not available, the system falls back to:
-
-```bash
-export OLLAMA_HOST=http://localhost:11434/v1
-export MAGIMODEL_MELCHIOR=qwen3.1:latest
-export MAGIMODEL_BALTHASAR=llama3.2:latest
-export MAGIMODEL_CASPAR=mistral:latest
-export MAGIMODEL_DEFAULT=llama3.1:latest
+hermes config set magi.models.melchior qwen3.5:397b-cloud
+hermes config set magi.models.balthasar gpt-oss:120b-cloud
+hermes config set magi.models.caspar deepseek-v4-pro:cloud
 ```
 
 ---
 
 ## Usage
 
-### Natural Triggers
+### Tool invocation (LLM-driven)
 
-Once the skill is loaded, invoke with trigger phrases:
+When Hermes detects a natural trigger phrase ("MAGI review", "three
+perspectives", "multi-perspective analysis"), it suggests the `magi_analyze`
+tool. The LLM can then call it with the appropriate mode and content.
 
-```
-MAGI review this code
-Give me three perspectives on this design
-Analyze this PR with MAGI
-Three perspectives on this problem
-```
-
-Or load explicitly:
-```
-/skill magi
-```
-
-### Modes
-
-| Mode | When to Use | Example |
-|------|-------------|---------|
-| `code-review` | Reviewing code or diffs | "MAGI review this PR" |
-| `design` | Evaluating architecture decisions | "MAGI analyze this migration plan" |
-| `analysis` | General problem analysis, trade-offs | "MAGI should we use Redis or Postgres for this?" |
-
-Default mode: `analysis`.
-
-### CLI (Direct Execution)
-
-The skill can also run standalone, outside of Hermes:
+### Slash command
 
 ```bash
-# Via the script directly
-python skills/magi/scripts/hermes_magi.py --mode code-review --input file.py --output report.txt
-
-# Or pipe input
-cat design.md | python skills/magi/scripts/hermes_magi.py --mode design --output report.txt
+/magi code-review: Review this PR diff
+/magi design: Should we use Redis or Postgres?
+/magi analysis: Three perspectives on this bug
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--mode` | `analysis` | One of: `code-review`, `design`, `analysis` |
-| `--input` | stdin | Input file or inline text |
-| `--output` | stdout | Output file for the report |
-| `--timeout` | `300` | Per-agent timeout in seconds |
-
----
-
-## How It Works
-
-```
-User input
-  |
-  v
-SKILL.md (complexity gate + mode detection)
-  |
-  v
-hermes_magi.py (async orchestrator)
-  |
-  +---> Melchior  (HTTP to LLM #1)  ---+
-  +---> Balthasar (HTTP to LLM #2)  ---+---> consensus.py
-  +---> Caspar    (HTTP to LLM #3)  ---+      reporting.py
-                                            |
-                                            v
-                                     Canonical ASCII report
-```
-
-### Step by Step
-
-1. **Complexity gate** — Simple questions are answered directly without invoking three agents.
-2. **Parallel dispatch** — Three async HTTP POST calls run concurrently, each with a distinct system prompt and a different model.
-3. **Independent analysis** — Each agent evaluates the same input through its unique lens and produces a structured JSON verdict.
-4. **Validation** — Each agent's output is parsed and validated against the agent JSON schema.
-5. **Weight-based vote** — The consensus engine computes a weighted score, deduplicates findings, and generates a consensus report.
-
-### Consensus Rules
-
-Verdicts are weighted: `approve = 1`, `conditional = 0.5`, `reject = -1`.
-
-```
-score = sum(weight[verdict] for each agent) / num_agents
-```
-
-| Score | Consensus |
-|-------|-----------|
-| 1.0 (unanimous approve) | **STRONG GO** |
-| -1.0 (unanimous reject) | **STRONG NO-GO** |
-| > 0 with conditionals | **GO WITH CAVEATS** |
-| > 0 without conditionals | **GO (N-M)** |
-| <= 0 | **HOLD (N-M)** |
-
-Labels are dynamic: `(N-M)` reflects the actual majority/minority split (e.g., `GO (2-1)` or `HOLD (1-1)` in degraded mode).
-
-### Confidence Formula
-
-```
-weight_factor = (abs(score) + 1) / 2    # symmetric for approve and reject
-base_confidence = sum(majority_confidence) / num_agents
-confidence = base_confidence * weight_factor
-```
-
-Using `abs(score)` ensures that both unanimous approve and unanimous reject produce high confidence. At `score = 0` (exact tie), confidence is halved — appropriate for an undecided split.
-
----
-
-## Output Example
-
-```
-+==================================================+
-|          MAGI SYSTEM -- VERDICT                  |
-+==================================================+
-|  Melchior (Scientist):   APPROVE (90%)           |
-|  Balthasar (Pragmatist): CONDITIONAL (85%)       |
-|  Caspar (Critic):        REJECT (78%)            |
-+==================================================+
-|  CONSENSUS: GO WITH CAVEATS (2-1)                |
-+==================================================+
-
-## Key Findings
-[!!!] **[CRITICAL]** SQL injection in query builder _(from melchior, caspar)_
-[!!]  **[WARNING]**  Missing retry logic for API calls _(from balthasar)_
-[i]   **[INFO]**     Consider adding request timeout _(from caspar)_
-
-## Dissenting Opinion
-**Caspar (Critic)**: Risk of data loss outweighs shipping speed...
-
-## Conditions for Approval
-- **Balthasar**: Add integration tests before merge
-
-## Recommended Actions
-- **Melchior** (Scientist): Fix SQL injection, add parameterized queries
-- **Balthasar** (Pragmatist): Ship after adding integration tests
-- **Caspar** (Critic): Rework query layer before proceeding
-```
-
-### Output Contract
-
-Every MAGI invocation ends with this exact format:
-
-- **Banner** — 52-column ASCII table with agent verdicts and confidence
-- **Key Findings** — Sorted by severity (critical → warning → info), deduplicated by content hash
-- **Dissenting Opinion** — Only when at least one agent disagrees with the majority
-- **Conditions for Approval** — Only when agents voted `conditional`
-- **Recommended Actions** — Always present, one per agent
-
-The banner is **machine-parseable** and **human-readable**.
-
----
-
-## Degraded Mode
-
-When an agent fails (timeout, parse error, validation error, endpoint unreachable):
-- Warning printed to stderr identifying the failed agent and reason
-- Synthesis proceeds if >= 2 agents succeeded
-- Report proceeds normally; missing agent is simply omitted from the banner
-
-If fewer than 2 agents succeed, the system exits with error and diagnostic output.
-
----
-
-## Project Structure
-
-```
-skills/magi/
-  SKILL.md                    -- Orchestrator (mode detection, config, workflow)
-  README.md                   -- This file
-  agents/
-    melchior.md               -- Scientist system prompt
-    balthasar.md              -- Pragmatist system prompt
-    caspar.md                 -- Critic system prompt (adversarial by design)
-  scripts/
-    hermes_magi.py            -- Async orchestrator (HTTP to OpenAI-compatible endpoint)
-    synthesize.py             -- Facade: re-exports from validate, consensus, reporting
-    validate.py               -- ValidationError + load_agent_output schema validation
-    consensus.py              -- VERDICT_WEIGHT + determine_consensus (weight-based scoring)
-    reporting.py              -- AGENT_TITLES + format_banner + format_report (ASCII)
-    models.py                 -- Hermes config reader + model registry
-    finding_id.py             -- SHA-256 finding identity (deduplication)
-    agent_schema.py           -- JSON Schema for structured output
-pyproject.toml                -- Python >= 3.11, dual license, tool config
-```
-
-### Module Architecture
-
-The synthesis engine is split into focused, single-responsibility modules:
-
-| Module | Responsibility | Key Exports |
-|--------|---------------|-------------|
-| `validate.py` | Schema validation | `ValidationError`, `load_agent_output` |
-| `consensus.py` | Weight-based scoring | `VERDICT_WEIGHT`, `determine_consensus` |
-| `reporting.py` | ASCII banner + markdown report | `format_banner`, `format_report` |
-| `models.py` | Config resolution | `get_models()`, `get_host()`, `get_timeout()` |
-| `synthesize.py` | Facade (re-exports all above) | All public symbols |
-
-**Import convention:** Always import from `synthesize` (the facade), not directly from sub-modules:
+### Python API
 
 ```python
-from synthesize import load_agent_output, determine_consensus, format_report
+from magi_plugin.orchestrator import run_magi_sync
+
+report = run_magi_sync(
+    mode="code-review",
+    content="```diff\n...\n```",
+    base_ref="main",
+)
+print(report["report"])          # ASCII consensus report
+print(report["consensus"])       # Structured consensus dict
+print(report["cost"])            # Per-agent cost aggregation
+print(report["input_size"])      # Estimated token footprint
 ```
+
+The returned `report` dict always contains:
+- `agents` — validated agent outputs
+- `consensus` — weighted majority verdict
+- `report` — formatted ASCII string
+- `cost` — per-agent + total USD (from raw envelopes)
+- `input_size` — chars, estimated tokens, oversize flag
+- `degraded` / `failed_agents` / `retried_agents` — when applicable
+- `guard` — finding guard summary (code-review only)
+- `enrichment_note` — context enrichment summary (code-review only)
+
+Additionally, `magi-report.json` is written to the run directory for audit.
 
 ---
 
-## Troubleshooting
+## Architecture
 
-### Ollama rejects requests (CORS error)
-
-Start Ollama with open origins:
-```bash
-OLLAMA_ORIGINS=* ollama serve
 ```
-
-Or set `origins: ["*"]` in `~/.ollama/config.yaml`.
-
-### Model not found
-
-Pull the model first:
-```bash
-ollama pull llama3.1:latest
-```
-
-### Endpoint unreachable
-
-Verify connectivity:
-```bash
-curl http://localhost:11434/v1/models
-```
-
-### One agent consistently fails validation
-
-Check the agent's output file in the temp directory (printed in stderr). Most common causes:
-- Missing a required JSON key
-- Verdict value not in `{approve, reject, conditional}`
-- Confidence outside `[0.0, 1.0]`
-- Findings not a list of objects with `{severity, title, detail}`
-
----
-
-## Requirements
-
-| Component | Required | Notes |
-|-----------|----------|-------|
-| Hermes Agent | For trigger-mode usage | CLI mode works standalone |
-| OpenAI-compatible endpoint | Yes | Ollama, vLLM, LM Studio, etc. |
-| Python 3.11+ | Yes | Uses `asyncio`, `dict[str, Any]` syntax |
-
-### Dev Dependencies
-
-```bash
-pip install pytest ruff mypy
-```
-
----
-
-## Running Tests
-
-```bash
-# All tests
-python -m pytest tests/ -v
-
-# Full verification (tests + lint + types)
-make verify
-
-# Individual checks
-make test        # pytest
-make lint        # ruff check
-make typecheck   # mypy
+MAGI-Hermes/
+├── plugin.yaml                    # Hermes plugin manifest
+├── pyproject.toml                 # Build + entry-point
+├── __init__.py                    # Re-export for directory install
+└── magi_plugin/
+    ├── __init__.py                  # register(ctx) — tools, hooks, commands
+    ├── orchestrator.py              # Async pipeline + retry + guard + enrichment
+    ├── models.py                    # Config resolution + model registry
+    ├── schemas.py                   # Tool schema for magi_analyze
+    ├── consensus.py                 # Deterministic weighted voting
+    ├── validate.py                  # Strict JSON schema validation
+    ├── finding_validation.py        # Diff-grounded finding guard
+    ├── review_context.py            # Git diff enrichment + symbol lookup
+    ├── sanitize.py                  # 4-layer prompt sanitization
+    ├── input_size.py                # Token estimation + oversize detection
+    ├── temp_dirs.py                 # LRU temp lifecycle + per-project namespace
+    ├── run_lock.py                  # Process-liveness locking
+    ├── cost.py                      # Cost aggregation from raw envelopes
+    ├── parse_agent_output.py        # Lenient JSON recovery from prose
+    ├── reporting.py                 # ASCII report formatting
+    ├── finding_id.py                # SHA-256 deduplication + category normalization
+    ├── agent_schema.py              # JSON Schema for structured output
+    └── agents/
+        ├── melchior.md              # Scientist prompt
+        ├── balthasar.md             # Pragmatist prompt
+        └── caspar.md                # Critic prompt
 ```
 
 ---
 
 ## License
 
-Dual licensed under [MIT](LICENSE) OR [Apache-2.0](LICENSE-APACHE), at your option.
-
----
-
-## Credits
-
-The MAGI concept originates from [*Neon Genesis Evangelion*](https://en.wikipedia.org/wiki/Neon_Genesis_Evangelion) (1995) by Hideaki Anno / Gainax. The three supercomputers — Melchior, Balthasar, and Caspar — govern critical decisions through structured consensus, each embodying a different facet of their creator Dr. Naoko Akagi.
-
-This skill is a fork of the [magi-claude](https://github.com/BolivarTech/magi-claude) plugin by Julian Bolivar, adapted for Hermes Agent to support any OpenAI-compatible local endpoint with genuine cross-model diversity.
-
-Original plugin: © Julian Bolivar.
-Hermes migration: © Julian Bolivar and contributors.
+Dual-licensed under MIT OR Apache-2.0.

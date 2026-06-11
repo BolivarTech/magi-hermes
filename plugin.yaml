@@ -1,0 +1,23 @@
+name: magi
+version: 1.0.0
+description: >
+  Multi-perspective analysis system inspired by the MAGI supercomputers
+  from Evangelion. Spawns three parallel LLM calls (Melchior-Scientist,
+  Balthasar-Pragmatist, Caspar-Critic) via an OpenAI-compatible local
+  endpoint, then synthesizes a weighted consensus and canonical ASCII
+  report. Use for decisions with genuine uncertainty, significant
+  consequences, or real trade-offs.
+author: Julian Bolivar
+license: MIT OR Apache-2.0
+provides_tools:
+  - magi_analyze
+provides_hooks:
+  - pre_llm_call
+provides:
+  commands:
+    - magi
+requires_env:
+  - name: OLLAMA_HOST
+    description: "URL of the OpenAI-compatible endpoint (default: http://localhost:11434/v1)"
+    url: "https://ollama.com/"
+    secret: false

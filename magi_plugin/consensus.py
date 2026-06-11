@@ -11,8 +11,8 @@ from __future__ import annotations
 import unicodedata
 from typing import Any
 
-from finding_id import generate_finding_id
-from validate import clean_title
+from magi_plugin.finding_id import generate_finding_id
+from magi_plugin.validate import clean_title
 
 VERDICT_WEIGHT: dict[str, float] = {
     "approve": 1,

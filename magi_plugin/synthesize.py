@@ -6,7 +6,7 @@ Re-exports from validate, consensus, and reporting for backward compatibility.
 
 from __future__ import annotations
 
-from validate import (
+from magi_plugin.validate import (
     VALID_AGENTS,
     VALID_SEVERITIES,
     VALID_VERDICTS,
@@ -14,11 +14,11 @@ from validate import (
     clean_title,
     load_agent_output,
 )
-from consensus import (
+from magi_plugin.consensus import (
     VERDICT_WEIGHT,
     determine_consensus,
 )
-from reporting import (
+from magi_plugin.reporting import (
     AGENT_TITLES,
     format_banner,
     format_report,

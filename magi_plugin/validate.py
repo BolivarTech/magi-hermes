@@ -12,7 +12,7 @@ import os
 import re
 from typing import Any
 
-from finding_id import normalize_category
+from magi_plugin.finding_id import normalize_category
 
 
 class ValidationError(Exception):
