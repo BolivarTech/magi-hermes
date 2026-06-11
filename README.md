@@ -54,16 +54,16 @@ biases:
 | Model diversity | Prompt-only | **Real cross-model diversity** (distinct model per mage) |
 | Config system | Custom TOML files | TOML + env precedence (see below) |
 | Cross-platform | Terminal only | Terminal + Telegram + Discord + Slack + ... |
-| Retry logic | Single-shot on schema/JSON fail | ✅ Identical (v2.2.0 / v2.2.4) |
-| Finding guard | Diff-grounded validation | ✅ Identical (v3.0.0 Block A) |
-| Code-review enrichment | Git diff + symbol lookup | ✅ Identical (A2, F2, F3) |
-| A5 mode strip | Null file/line in design/analysis | ✅ Identical |
-| JSON report output | `magi-report.json` artifact | ✅ Identical |
-| Temp dir lifecycle | LRU + locks + cleanup | ✅ Identical (v2.6.0) |
-| Input size warning | Chars/4 heuristic | ✅ Identical |
-| Cost tracking | Aggregate `total_cost_usd` | ✅ Identical |
-| Sanitization | 4-layer defense-in-depth | ✅ Identical |
-| Windows UTF-8 | `reconfigure` on startup | ✅ Identical (v2.2.6) |
+| Retry logic | Single-shot on schema/JSON fail | Identical (v2.2.0 / v2.2.4) |
+| Finding guard | Diff-grounded validation | Identical (v3.0.0 Block A) |
+| Code-review enrichment | Git diff + symbol lookup | Identical (A2, F2, F3) |
+| A5 mode strip | Null file/line in design/analysis | Identical |
+| JSON report output | `magi-report.json` artifact | Identical |
+| Temp dir lifecycle | LRU + locks + cleanup | Identical (v2.6.0) |
+| Input size warning | Chars/4 heuristic | Identical |
+| Cost tracking | Aggregate `total_cost_usd` | Identical |
+| Sanitization | 4-layer defense-in-depth | Identical |
+| Windows UTF-8 | `reconfigure` on startup | Identical (v2.2.6) |
 | Integration | Claude Code plugin | **Hermes Agent native plugin** |
 
 ---
@@ -80,43 +80,198 @@ biases:
 
 ## Prerequisites
 
-- Hermes Agent installed and configured
+- [Hermes Agent](https://hermes-agent.nousresearch.com/) installed
 - An OpenAI-compatible endpoint reachable from the Hermes host (default: `http://localhost:11434/v1`)
-- Python 3.11+ (uses `asyncio`, `tomllib`, modern dict syntax)
+- Python 3.11+
 
 ---
 
 ## Installation
 
-### Via pip
+Hermes uses a **directory plugin** system. The standard Hermes installer runs from a stripped virtual environment without `pip`, so the `pyproject.toml` entry-point is reserved for advanced users running Hermes from source. The method below works for all standard installations.
+
+### Step 1 — Clone the repository
 
 ```bash
-pip install magi-hermes-plugin
+git clone https://github.com/BolivarTech/MAGI-Hermes.git
+cd MAGI-Hermes
 ```
 
-Hermes auto-discovers the plugin on next startup via the entry-point declared
-in `pyproject.toml`:
-```toml
-[project.entry-points."hermes_agent.plugins"]
-magi = "magi_plugin"
-```
+### Step 2 — Install as a directory plugin
 
-### As a directory plugin
+Hermes looks for plugins under `~/.hermes/plugins/<name>/`. The path `~/.hermes` expands automatically on every OS (Linux/macOS: `$HOME/.hermes`, Windows: `%USERPROFILE%\AppData\Local\hermes`).
 
 ```bash
-git clone https://github.com/BolivarTech/magi-hermes.git
-cd magi-hermes
+# Create the plugin directory
 mkdir -p ~/.hermes/plugins/magi
-ln -s "$(pwd)/magi-hermes-plugin"/* ~/.hermes/plugins/magi/
-hermes
+
+# Copy the entire repo contents (preserves the magi_plugin/ package)
+cp -r . ~/.hermes/plugins/magi/
 ```
 
-### Enable
+> **Tip:** On Windows PowerShell the same command is:
+> ```powershell
+> $pluginsDir = "$env:USERPROFILE\AppData\Local\hermes\plugins\magi"
+> New-Item -ItemType Directory -Force -Path $pluginsDir
+> Copy-Item -Path "$(Get-Location)\*" -Destination $pluginsDir -Recurse -Force
+> ```
+
+After copying, `~/.hermes/plugins/magi/` should contain:
+
+```
+~/.hermes/plugins/magi/
+├── __init__.py              # delegates to magi_plugin.register()
+├── plugin.yaml              # Hermes plugin manifest
+├── pyproject.toml           # optional build metadata
+├── LICENSE
+├── LICENSE-APACHE
+├── README.md
+└── magi_plugin/             # implementation package
+    ├── __init__.py            # register(ctx) + sys.modules shim
+    ├── orchestrator.py
+    ├── models.py
+    ├── schemas.py
+    ├── consensus.py
+    ├── validate.py
+    ├── finding_validation.py
+    ├── review_context.py
+    ├── sanitize.py
+    ├── input_size.py
+    ├── temp_dirs.py
+    ├── run_lock.py
+    ├── cost.py
+    ├── parse_agent_output.py
+    ├── reporting.py
+    ├── finding_id.py
+    ├── agent_schema.py
+    ├── synthesize.py
+    ├── status_display.py
+    ├── stderr_shim.py
+    ├── subprocess_utils.py
+    ├── backend.py
+    ├── ollama_backend.py
+    ├── ollama_config.py
+    ├── ollama_init.py
+    ├── ollama_preflight.py
+    └── agents/
+        ├── melchior.md
+        ├── balthasar.md
+        └── caspar.md
+```
+
+> **How it works:** Hermes imports the root `__init__.py`, which calls `magi_plugin.register(ctx)`. A `sys.modules` shim inside `magi_plugin/__init__.py` guarantees that absolute imports (`from magi_plugin.X import ...`) resolve correctly regardless of whether the plugin is loaded as a directory plugin or via pip.
+
+### Step 3 — Enable the plugin
+
+Hermes is **opt-in**: only plugins listed in `plugins.enabled` are loaded.
+
+Run **outside** Hermes (in your regular shell):
 
 ```bash
-hermes plugins list          # Should show magi
-hermes plugins enable magi   # Enable if not already active
+hermes plugins enable magi
 ```
+
+Or edit `~/.hermes/config.yaml` manually and ensure `enabled` is a **YAML list**, not a string:
+
+```yaml
+plugins:
+  enabled:
+    - magi
+```
+
+> **Common mistake:** `hermes config set plugins.enabled "[magi]"` writes the string literal `enabled: '[magi]'`, which Hermes ignores. Always use `hermes plugins enable magi` or a proper YAML list.
+
+### Step 4 — Restart Hermes
+
+Plugin discovery runs **once at startup**.
+
+```bash
+exit    # or /exit if you are inside Hermes
+hermes  # start Hermes again
+```
+
+### Step 5 — Verify
+
+Inside Hermes:
+
+```bash
+/plugins
+```
+
+Expected output:
+
+```
+User plugins (1):
+  ● magi v1.0.0 [enabled]
+```
+
+If it shows `[not enabled] — not enabled in config`, run `hermes plugins enable magi` **outside** Hermes and restart again.
+
+---
+
+### Updating the plugin
+
+Pull the latest changes and re-copy:
+
+```bash
+cd MAGI-Hermes
+git pull
+
+# Re-install
+cp -r . ~/.hermes/plugins/magi/
+```
+
+> **Tip:** On Windows PowerShell the same command is:
+> ```powershell
+> cd MAGI-Hermes
+> git pull
+> $pluginsDir = "$env:USERPROFILE\AppData\Local\hermes\plugins\magi"
+> Copy-Item -Path "$(Get-Location)\*" -Destination $pluginsDir -Recurse -Force
+> ```
+
+Then restart Hermes (`exit` + `hermes`).
+
+---
+
+### Advanced: pip install (source builds only)
+
+This method is **only for developers who build Hermes from source** using a shared Python virtual environment. It does NOT work with the standard Hermes installer.
+
+#### When does this apply?
+
+| Scenario | Method to use |
+|----------|--------------|
+| Standard Hermes installer (most users) | Directory plugin (see Step 2 above) |
+| Running Hermes from Git source (`python -m hermes_agent`) | `pip install -e .` |
+| Developing Hermes core itself | `pip install -e .` |
+| Hermes installed via `uv tool install` or `pipx` | Directory plugin only |
+
+The standard Hermes installer bundles its own isolated, stripped virtual environment. That venv **lacks pip, setuptools and importlib.metadata**, so any package you install with `pip` elsewhere on your system is invisible to it.
+
+#### How to check which scenario you are in
+
+```bash
+# Run this outside Hermes
+python -c "import hermes_agent; print(hermes_agent.__file__)"
+```
+
+- If it prints a path inside `site-packages` of your **own** venv → you have a source/shared install → `pip install -e .` works.
+- If the command fails with `ModuleNotFoundError` → you have the standard installer → **use the directory plugin**.
+
+#### If you are in the source-build scenario
+
+```bash
+# Activate the SAME venv where Hermes itself is installed
+source /path/to/hermes-venv/bin/activate
+
+# Install MAGI plugin in editable mode
+cd MAGI-Hermes
+pip install -e .
+```
+
+Hermes will auto-discover the plugin via the `pyproject.toml` entry-point on next startup. Then enable and restart as usual.
+
+> **Never mix methods.** If you install via `pip` AND copy as directory plugin, Hermes may load duplicate registrations. Pick one.
 
 ---
 
@@ -193,7 +348,11 @@ tool. The LLM can then call it with the appropriate mode and content.
 /magi code-review: Review this PR diff
 /magi design: Should we use Redis or Postgres?
 /magi analysis: Three perspectives on this bug
+/magi init-ollama              # Scaffold .hermes/magi-ollama.toml
 ```
+
+The `init-ollama` sub-command creates a repo-level config file with the default
+cross-lineage model trio pre-filled. Never overwrites an existing file.
 
 ### Python API
 
@@ -250,6 +409,7 @@ MAGI-Hermes/
     ├── reporting.py                 # ASCII report formatting
     ├── finding_id.py                # SHA-256 deduplication + category normalization
     ├── agent_schema.py              # JSON Schema for structured output
+    ├── ollama_init.py               # TOML scaffolding command
     └── agents/
         ├── melchior.md              # Scientist prompt
         ├── balthasar.md             # Pragmatist prompt

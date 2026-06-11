@@ -11,11 +11,32 @@ import asyncio
 import json
 import logging
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
+# ── Self-register as magi_plugin so absolute imports work ───────────────
+# When loaded as a directory plugin under hermes_plugins.magi, all sibling
+# modules must also be reachable via magi_plugin.* because the codebase was
+# originally written for a pip-installable package.
+_pkg_name = __name__
+if "magi_plugin" not in sys.modules:
+    sys.modules["magi_plugin"] = sys.modules[_pkg_name]
+
+# Pre-register already-imported submodules under the magi_plugin.* alias.
+# This is executed once after all imports below have resolved.
+def _register_aliases() -> None:
+    for _mod_name, _mod in list(sys.modules.items()):
+        if _mod_name.startswith(_pkg_name + "."):
+            _short = _mod_name[len(_pkg_name) + 1 :]
+            _alias = f"magi_plugin.{_short}"
+            if _alias not in sys.modules:
+                sys.modules[_alias] = _mod
+
 from magi_plugin.orchestrator import run_magi
 from magi_plugin import schemas
+
+_register_aliases()
 
 logger = logging.getLogger(__name__)
 
@@ -92,19 +113,41 @@ def _make_slash_handler(ctx: Any):
     _MODE_RE = re.compile(
         r"^(code-review|design|analysis)\s*[:\-]\s*(.+)$", re.IGNORECASE | re.DOTALL
     )
+    _INIT_RE = re.compile(
+        r"^init-ollama\s*(\S.*)?$", re.IGNORECASE
+    )
 
     def handler(raw_args: str) -> str:
         raw = raw_args.strip()
         if not raw:
             return (
-                "Usage: /magi <mode>: <content>\n"
+                "Usage: /magi \u003cmode\u003e: \u003ccontent\u003e\n"
+                "       /magi init-ollama\n"
                 "  Modes: code-review | design | analysis\n"
                 "  Examples:\n"
                 '    /magi code-review: Review this PR diff\n'
                 '    /magi design: Should we use Redis or Postgres?\n'
-                '    /magi analysis: Three perspectives on this bug'
+                '    /magi analysis: Three perspectives on this bug\n'
+                '    /magi init-ollama        # Scaffold .hermes/magi-ollama.toml'
             )
 
+        # ── init-ollama branch ───────────────────────────────────────────
+        init_m = _INIT_RE.match(raw)
+        if init_m:
+            from magi_plugin.ollama_init import write_template
+            try:
+                path = write_template()
+                return f"MAGI Ollama config scaffolded:\n  {path}\n\nEdit the models if needed, then restart Hermes."
+            except FileExistsError:
+                return (
+                    "MAGI Ollama config already exists.\n"
+                    "  Run from a different repo or delete .hermes/magi-ollama.toml first."
+                )
+            except Exception as exc:
+                logger.warning("/magi init-ollama failed: %s", exc)
+                return f"init-ollama failed: {exc}"
+
+        # ── analysis branch ──────────────────────────────────────────────
         m = _MODE_RE.match(raw)
         if m:
             mode = m.group(1).lower()
