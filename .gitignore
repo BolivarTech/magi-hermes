@@ -34,3 +34,6 @@ magi-audit-postfix/
 # The directory persists on disk after branch checkout to main until the
 # operator deletes both the branch and the directory on 2026-05-29.
 experiments/
+
+# Hermes per-session planning / scratch directories
+.hermes/
