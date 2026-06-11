@@ -202,7 +202,7 @@ Expected output:
 
 ```
 User plugins (1):
-  ● magi v2.0.0 [enabled]
+  ● magi v2.0.1 [enabled]
 ```
 
 If it shows `[not enabled] — not enabled in config`, run `hermes plugins enable magi` **outside** Hermes and restart again.
@@ -348,10 +348,10 @@ tool. The LLM can then call it with the appropriate mode and content.
 /magi code-review: Review this PR diff
 /magi design: Should we use Redis or Postgres?
 /magi analysis: Three perspectives on this bug
-/magi init-ollama              # Scaffold .hermes/magi-ollama.toml
+/magi --init-magi              # Scaffold .hermes/magi-ollama.toml
 ```
 
-The `init-ollama` sub-command creates a repo-level config file with the default
+The `--init-magi` sub-command creates a repo-level config file with the default
 cross-lineage model trio pre-filled. Never overwrites an existing file.
 
 ### Python API

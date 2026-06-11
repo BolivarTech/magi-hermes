@@ -91,6 +91,7 @@ def _make_magi_handler(ctx: Any):
         if not content.strip():
             return json.dumps({"error": "No content provided for analysis."})
 
+        print(f"[MAGI] Starting analysis... mode={mode}, launching 3 agents", flush=True)
         try:
             report = asyncio.run(run_magi(mode=mode, content=content))
             return json.dumps({
@@ -114,24 +115,24 @@ def _make_slash_handler(ctx: Any):
         r"^(code-review|design|analysis)\s*[:\-]\s*(.+)$", re.IGNORECASE | re.DOTALL
     )
     _INIT_RE = re.compile(
-        r"^init-ollama\s*(\S.*)?$", re.IGNORECASE
+        r"^--init-magi\s*(\S.*)?$", re.IGNORECASE
     )
 
     def handler(raw_args: str) -> str:
         raw = raw_args.strip()
         if not raw:
             return (
-                "Usage: /magi \u003cmode\u003e: \u003ccontent\u003e\n"
-                "       /magi init-ollama\n"
+                "Usage: /magi <mode>: <content>\n"
+                "       /magi --init-magi\n"
                 "  Modes: code-review | design | analysis\n"
                 "  Examples:\n"
                 '    /magi code-review: Review this PR diff\n'
                 '    /magi design: Should we use Redis or Postgres?\n'
                 '    /magi analysis: Three perspectives on this bug\n'
-                '    /magi init-ollama        # Scaffold .hermes/magi-ollama.toml'
+                '    /magi --init-magi        # Scaffold .hermes/magi-ollama.toml'
             )
 
-        # ── init-ollama branch ───────────────────────────────────────────
+        # ── init branch ──────────────────────────────────────────────────
         init_m = _INIT_RE.match(raw)
         if init_m:
             from magi_plugin.ollama_init import write_template
@@ -144,8 +145,8 @@ def _make_slash_handler(ctx: Any):
                     "  Run from a different repo or delete .hermes/magi-ollama.toml first."
                 )
             except Exception as exc:
-                logger.warning("/magi init-ollama failed: %s", exc)
-                return f"init-ollama failed: {exc}"
+                logger.warning("/magi --init-magi failed: %s", exc)
+                return f"--init-magi failed: {exc}"
 
         # ── analysis branch ──────────────────────────────────────────────
         m = _MODE_RE.match(raw)
@@ -157,7 +158,9 @@ def _make_slash_handler(ctx: Any):
             content = raw
 
         try:
+            print("[MAGI] Starting analysis...", flush=True)
             report = asyncio.run(run_magi(mode=mode, content=content))
+            print("[MAGI] Analysis complete.", flush=True)
             return report.get("report", "MAGI returned empty report.")
         except Exception as exc:
             logger.warning("/magi failed: %s", exc)

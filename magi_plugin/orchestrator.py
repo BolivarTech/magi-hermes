@@ -400,15 +400,20 @@ async def run_magi(
         retried_agents: list[str] = []
         failed_agents: list[str] = []
 
+        print(f"[MAGI] Launching {len(AGENTS)} agents in parallel (timeout={_timeout}s each)...", flush=True)
+
         async def _run_one(agent_name: str) -> dict[str, Any] | None:
             async with semaphore:
                 prompt_path = AGENT_PROMPTS_DIR / f"{agent_name}.md"
                 model = _models.get(agent_name, "qwen3.5:397b-cloud")
+                print(f"[MAGI] {agent_name} starting (model={model})...", flush=True)
                 try:
-                    return await _run_agent(
+                    result = await _run_agent(
                         agent_name, prompt_path, prompt, model, _host,
                         _timeout, _api_key, _structured, _output_dir,
                     )
+                    print(f"[MAGI] {agent_name} finished", flush=True)
+                    return result
                 except (ValidationError, json.JSONDecodeError) as exc:
                     # This is the SECOND failure (retry already happened inside _run_agent)
                     failed_agents.append(agent_name)
@@ -422,6 +427,8 @@ async def run_magi(
 
         results = await asyncio.gather(*[_run_one(a) for a in AGENTS])
         agents_raw = [r for r in results if r is not None]
+
+        print(f"[MAGI] Agents complete: {len(agents_raw)}/{len(AGENTS)} succeeded", flush=True)
 
         if len(agents_raw) < 2:
             raise RuntimeError(
