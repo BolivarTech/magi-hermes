@@ -23,9 +23,9 @@ classifiers = [
 dev = ["pytest", "ruff", "mypy"]
 
 [project.urls]
-Repository = "https://github.com/BolivarTech/MAGI-Hermes"
-Homepage = "https://github.com/BolivarTech/MAGI-Hermes"
-Issues = "https://github.com/BolivarTech/MAGI-Hermes/issues"
+Repository = "https://github.com/BolivarTech/magi-hermes"
+Homepage = "https://github.com/BolivarTech/magi-hermes"
+Issues = "https://github.com/BolivarTech/magi-hermes/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
