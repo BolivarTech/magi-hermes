@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "magi-hermes-plugin"
-version = "2.0.1"
+version = "2.0.2"
 description = "Multi-perspective analysis plugin for Hermes Agent — three adversarial LLM agents (Melchior, Balthasar, Caspar) with weighted consensus"
 readme = "README.md"
 license = {text = "MIT OR Apache-2.0"}
